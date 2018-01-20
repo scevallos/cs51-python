@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# Used to convert all submissions to a PDF. 
+# Looks through all the directories in the current directory, and
+# if there's a file inside with given filename, generates a PDF in
+# that output directory.
+# 
+# Do not need file extension in filename (assuming it is always .py)
+#
+# Options:
+#       -f | --filename
+#           The name of the file to look for inside all the directories
+#       
+#
+# author:
+#       scevallos (Sebastian)
+# usage:
+#       ./make_pdfs lab01
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -f|--filename)
+    FILENAME="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -o|--output)
+    OUTPUT_DIR="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    *)    # unknown option
+    echo "Unknown option"
+    shift # past argument
+    ;;
+esac
+done
+
+if [ -z "$FILENAME" ]; then
+    echo "Please supply filename (e.g. \"lab01\")"
+    exit
+else
+  for D in *; do
+      if [ -d "${D}" -a "$D/$1.py" ]; then
+          enscript -p "$D/temp.ps" "$D/$1.py" && ps2pdf "$D/temp.ps" "$D/$1.pdf" && rm "$D/temp.ps"
+      else
+          echo "No file named $1 in $D"
+      fi
+  done
+fi
