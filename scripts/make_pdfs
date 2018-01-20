@@ -6,48 +6,72 @@
 # that output directory.
 # 
 # Do not need file extension in filename (assuming it is always .py)
+# 
+# PDF generation is done via CLI tools that convert the file to a PostScript
+# file, and then to a PDF (enscript and ps2pdf).
 #
 # Options:
+#       -h | --help
+#           Usage message
 #       -f | --filename
 #           The name of the file to look for inside all the directories
-#       
+#       -o | --output
+#           The directory where the PDFs will be made. If the dir doesn't
+#           exist, a new dir will be made in the current dir
 #
 # author:
 #       scevallos (Sebastian)
 # usage:
-#       ./make_pdfs lab01
+#       ./make_pdfs -f lab01 -o lab01_pdfs
 
 while [[ $# -gt 0 ]]
 do
 key="$1"
 
 case $key in
+    -h|--help)
+        echo "Usage: ./make_pdfs -f <filename> -o <output_dir>"
+        exit
+     ;;
     -f|--filename)
-    FILENAME="$2"
-    shift # past argument
-    shift # past value
-    ;;
+        FILENAME="$2"
+        shift # past argument
+        shift # past value
+     ;;
     -o|--output)
-    OUTPUT_DIR="$2"
-    shift # past argument
-    shift # past value
-    ;;
+        OUTPUT_DIR="$2"
+        shift # past argument
+        shift # past value
+     ;;
     *)    # unknown option
-    echo "Unknown option"
-    shift # past argument
+        echo "Unknown option: $1"
+        echo "Usage: ./make_pdfs -f <filename> -o <output_dir>"
+        exit
     ;;
 esac
 done
 
+# Handling filename
 if [ -z "$FILENAME" ]; then
     echo "Please supply filename (e.g. \"lab01\")"
     exit
-else
-  for D in *; do
-      if [ -d "${D}" -a "$D/$1.py" ]; then
-          enscript -p "$D/temp.ps" "$D/$1.py" && ps2pdf "$D/temp.ps" "$D/$1.pdf" && rm "$D/temp.ps"
-      else
-          echo "No file named $1 in $D"
-      fi
-  done
 fi
+
+# Handling output dir stuff
+if [ -z "$OUTPUT_DIR" ]; then
+    # No output dir specified --> make some dir w/ PDFs in current dir 
+    OUTPUT_DIR="output"
+    mkdir "output"
+elif [ ! -d "$OUTPUT_DIR" ]; then
+    # A dir with $OUTPUT_DIR name doesn't exist --> make it
+    mkdir "$OUTPUT_DIR"
+fi
+
+# For each dir in current dir
+for D in *; do
+    # if dir and if there is a regular file w/ $FILENAME in there
+    if [ -d "${D}" -a -f "$D/$FILENAME.py" ]; then
+        # convert to PS then to PDF. remove intermediate PS file afterwards
+        enscript -p "$D/temp.ps" "$D/$FILENAME.py" && ps2pdf "$D/temp.ps" "$OUTPUT_DIR/$D_$FILENAME.pdf" && rm "$D/temp.ps"
+    fi
+done
