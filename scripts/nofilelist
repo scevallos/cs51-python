@@ -2,9 +2,10 @@
 #
 FILENAME=$1
 for D in *; do
-    # if dir and if there is a regular file w/ $FILENAME in there
+    # check if file is not a directory
     if [ ! -d "${D}" ]; then
         echo "$D is not a directory" >> "nofilelist.txt"
+    # if it's a dir, check if there's a file w FILENAME name inside
     elif [ !-f "$D/$FILENAME.py" ]; then
         echo "$D doesn't have a $FILENAME file inside" >> "nofilelist.txt"
     fi
