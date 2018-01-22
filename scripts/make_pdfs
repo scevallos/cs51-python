@@ -73,5 +73,7 @@ for D in *; do
     if [ -d "${D}" -a -f "$D/$FILENAME.py" ]; then
         # convert to PS then to PDF. remove intermediate PS file afterwards
         enscript -p "$D/temp.ps" "$D/$FILENAME.py" && ps2pdf "$D/temp.ps" "$OUTPUT_DIR/$D_$FILENAME.pdf" && rm "$D/temp.ps"
+    else
+        echo "$D" >> "nofilelist.txt"
     fi
 done
