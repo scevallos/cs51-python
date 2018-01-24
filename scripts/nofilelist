@@ -1,12 +1,19 @@
 #!/bin/bash
 #
+
 FILENAME=$1
+
+# used to help w "lab01" vs "Lab01"
+capped=$(echo -n "${FILENAME:0:1}" | tr "[:lower:]" "[:upper:]"; echo -n "${FILENAME:1}")
+
+# For each dir in current dir
 for D in *; do
-    # check if file is not a directory
+    # if not dir 
     if [ ! -d "${D}" ]; then
-        echo "$D is not a directory" >> "nofilelist.txt"
-    # if it's a dir, check if there's a file w FILENAME name inside
-    elif [ !-f "$D/$FILENAME.py" ]; then
-        echo "$D doesn't have a $FILENAME file inside" >> "nofilelist.txt"
+       echo "$D is not a dir!" >> "nofilelist.txt"
+    else
+       if [ ! -f "$D/$FILENAME.py" -a ! -f "$D/$capped.py" ]; then
+           echo "$D" >> "nofilelist.txt"
+       fi
     fi
 done
