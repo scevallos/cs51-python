@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# Modified slightly from version I found online
+#
+# from: https://codereview.stackexchange.com/questions/129649/bash-script-to-perform-luhn-check
+#
+
+num=$1
+numlen=${#num}
+
+for ((i = numlen - 1; i >= 0; i--)); do
+  digit=${num:$i:1}
+  if [ $(((numlen-i) % 2)) -eq 0 ]; then
+     # if it's an even number, double it
+     ((digit*=2))
+     [ ${#digit} -eq 2 ] && digit=$((${digit:0:1}+${digit:1:1}))
+  fi
+  ((sum+=digit))
+done
+
+if [ $((sum % 10)) -eq 0 ]; then
+    echo "Valid"
+else
+    echo "NOT valid"
+fi

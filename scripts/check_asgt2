@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Checks if the output of each student assignment 2 generated 2 valid and
+# 1 invalid card number. Uses other external Luhn algorithm
+#
+# two params: where the student_out files are, and a dir to write the results
+#
+# Author(s):
+#       scevallos (Sebastian)
+
+OUT_FILES=$1
+RESULTS=$2
+
+if [ ! -d "$OUT_FILES" ]; then
+    echo "First param must be directory of out files"
+    exit
+fi
+
+if [ ! -d "$RESULTS" ]; then
+    mkdir $RESULTS
+fi
+
+for out_file in "$OUT_FILES"/*.txt; do
+    echo "looking at $out_file"
+    nums=$(grep -o -E '[0-9]{7,}(.[0-9]+)?' $out_file)
+    fname=$(echo $out_file | sed -r 's/output\//test_/g')
+    for n in $nums; do
+        printf "$n is " >> "$RESULTS/$fname"
+        ./scripts/luhn $n >> "$RESULTS/$fname" || echo "Failed Luhn check" >> "$RESULTS/$fname"
+    done
+done
+
+# Now look at results and see if it's right
+for res_file in "$RESULTS"/*.txt; do
+    check=0
+    while read line; do
+        if [[ $line =~ .*Valid.* ]]; then
+            (( check += 1 ))
+        fi
+    done < $res_file
+    score_name=$(echo $res_file | sed -r 's/(.*)out_//g')
+    if [ "$check" -eq 2 ]; then
+        echo "PASSED" >> "$RESULTS/score_$score_name"
+    else
+        echo "FAILED" >> "$RESULTS/score_$score_name"
+    fi
+done

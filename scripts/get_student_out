@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Generates output files from giving submissions stdin and getting stdout
+# Need to specify a dir with the submissions, a dir with the tests,
+# and a dir where the output files will go.
+#
+# Options:
+#       -h | --help
+#           Usage message
+#       -s | --submissions
+#           The directory where the student submissions are
+#       -t | --tests
+#           The directory where the tests (text files) are.
+#       -o | --output
+#           The directory where the result files will written.
+#
+# author:
+#       scevallos (Sebastian)
+# usage:
+#       ./get_student_out -s assignments -t tests -o output
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -h|--help)
+        echo "Usage: ./get_student_out -s assignments -t tests -o output"
+        exit
+     ;;
+    -s|--submissions)
+        SUBMISSIONS="$2"
+        shift # past argument
+        shift # past value
+     ;;
+    -t|--tests)
+        TESTS="$2"
+        shift # past argument
+        shift # past value
+     ;;
+    -o|--output)
+        OUTPUT="$2"
+        shift # past argument
+        shift # past value
+     ;;
+    *)    # unknown option
+        echo "Unknown option: $1"
+        echo "Usage: ./make_pdfs -f <filename> -o <output_dir>"
+        exit
+    ;;
+esac
+done
+
+# Handling missing args
+if [ -z "$SUBMISSIONS" -o -z "$TESTS" -o -z "$OUTPUT" ]; then
+    echo "Please supply a value for -s -t and -o flags."
+    exit
+fi
+
+# if the specified dir isn't a dir, then make it
+if [ ! -d "$OUTPUT" ]; then
+    mkdir "$OUTPUT"
+fi
+
+
+# Generate output files for each of the tests for each assignment
+# For each of the assignments
+for asgt in "$SUBMISSIONS"/*ss*.py; do
+    # for each of the tests
+    for test_case in "$TESTS"/*.txt; do
+        out_name=$(echo $asgt | sed -r 's/assignments\//out_/g' | sed -r 's/_[aA]ssignment0?2.py/.txt/g')
+        test_num=$(echo $test_case | tr -dc '0-9')
+        # echo "testing $asgt with $test_case and writing to $OUTPUT/$test_num$out_name"
+        python3 "$asgt" < "$test_case" > "$OUTPUT/$test_num$out_name"
+    done
+done
+
+

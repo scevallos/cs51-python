@@ -43,6 +43,11 @@ case $key in
         shift # past argument
         shift # past value
      ;;
+    -s|--student)
+        STUDENT="$2"
+        shift
+        shift
+     ;;
     *)    # unknown option
         echo "Unknown option: $1"
         echo "Usage: ./make_pdfs -f <filename> -o <output_dir>"
@@ -50,6 +55,13 @@ case $key in
     ;;
 esac
 done
+
+# convert for single student
+if [ "$STUDENT" ]; then
+    echo "only converting $STUDENT"
+    enscript -p "temp.ps" "$STUDENT" && ps2pdf temp.ps "${STUDENT::-4}".pdf && rm temp.ps
+    exit
+fi
 
 # Handling filename
 if [ -z "$FILENAME" ]; then

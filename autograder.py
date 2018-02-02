@@ -105,9 +105,11 @@ def main():
     """
     # setup config parser
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read('config/config.ini')
 
     default = config['DEFAULT']
+
+    # see if grading individual students
 
     # import the assignments as modules
     assignment_names = [f[:-3] for f in listdir(default['SubmissionsFolder']) if 'ass' in f]
