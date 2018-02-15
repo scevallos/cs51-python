@@ -18,6 +18,9 @@
 #       -o | --output
 #           The directory where the PDFs will be made. If the dir doesn't
 #           exist, a new dir will be made in the current dir
+#       -s | --single
+#           Flag used to indicate that only a single file needs to be converted
+#           Takes 2 params: path to file and name of pdf file (no ext needed)
 #
 # author:
 #       scevallos (Sebastian)
@@ -43,8 +46,10 @@ case $key in
         shift # past argument
         shift # past value
      ;;
-    -s|--student)
-        STUDENT="$2"
+    -s|--single)
+        SINGLE="$2"
+        NAME="$3"
+        shift
         shift
         shift
      ;;
@@ -57,9 +62,9 @@ esac
 done
 
 # convert for single student
-if [ "$STUDENT" ]; then
-    echo "only converting $STUDENT"
-    enscript -p "temp.ps" "$STUDENT" && ps2pdf temp.ps "${STUDENT::-4}".pdf && rm temp.ps
+if [ "$SINGLE" -a "$NAME" ]; then
+    echo "only converting $SINGLE"
+    enscript -p "temp.ps" "$SINGLE" && ps2pdf temp.ps "$NAME".pdf && rm temp.ps
     exit
 fi
 
