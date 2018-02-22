@@ -64,7 +64,7 @@ done
 # convert for single student
 if [ "$SINGLE" -a "$NAME" ]; then
     echo "only converting $SINGLE"
-    enscript -p "temp.ps" "$SINGLE" && ps2pdf temp.ps "$NAME".pdf && rm temp.ps
+    enscript -p "temp.ps" "$SINGLE" && ps2pdf temp.ps "$NAME" && rm temp.ps
     exit
 fi
 
