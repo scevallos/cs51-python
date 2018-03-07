@@ -33,7 +33,8 @@ key="$1"
 
 case $key in
     -h|--help)
-        echo "Usage: ./make_pdfs -f <filename> -o <output_dir>"
+        echo "Usage: ./make_pdfs -f <filename_no_ext> -o <output_dir>"
+        echo "       ./make_pdfs -s <single_filename> <output_pdf_filename>"
         exit
      ;;
     -f|--filename)
