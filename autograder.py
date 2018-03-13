@@ -157,7 +157,7 @@ def main():
 
     # import the assignments as modules
     try:
-        assignment_modules = [importlib.import_module(default['AssignmentsFolder'] + '.' + m[:-3]) for m in listdir(default['AssignmentsFolder']) if 'ass' in m]
+        assignment_modules = [importlib.import_module(default['AssignmentsFolder'] + '.' + m[:-3]) for m in listdir(default['AssignmentsFolder']) if ('sig' in m and default['AssignmentNumber'] in m)]
     except Exception as err:
         print('Issues with importing assignments as modules: {}'.format(err))
         print('The assignments must be of the form "<username>_assignment<assignment_num>.py"')
