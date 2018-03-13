@@ -9,7 +9,6 @@ Author(s):
 import subprocess as sub
 import configparser
 import importlib
-from ast import literal_eval
 from sys import exit, version_info
 from os import listdir, mkdir
 from os.path import isdir, exists, join
@@ -57,8 +56,23 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                 all_scores.write(modname[(modname.find('.') + 1):(modname.find('_'))] + ':\t')
                 total_correct = total_tests = 0
 
-            # start putting the module thru the tests
-            for func_name, test_in_out in tests.items():
+            # TODO: maybe make test cases an ordered dict to preserve order
+            # accross runs?
+
+            # filter tests by ones specified in config
+            funcs_to_test = default['FuncsToTest']
+
+            # start putting module thru tests
+            for func_name, test_case_obj in tests.items():
+                # skipping any funcs not in the FuncsToTest config var
+                if funcs_to_test != '*' and func_name not in funcs_to_test:
+                    continue
+                # used for abstraction of optional schema for output testing
+                if type(test_case_obj) == list:
+                    schema, test_in_out = test_case_obj
+                else:
+                    test_in_out = test_case_obj
+                    schema = None
                 # used for numbering of testcases and keeping track of correct
                 func_num_correct = func_num_test_case = 0
 
@@ -66,7 +80,11 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                 score_file.write(func_name + '\n')
 
                 # get the function object
-                func = getattr(module, func_name)
+                try:
+                    func = getattr(module, func_name)
+                except AttributeError:
+                    print('Unable to get function {} from {}'.format(func_name, modname))
+                    score_file.write('\tno such function in this module\n')
 
                 # go through all testcases for this function
                 for test_in, test_out in test_in_out.items():
@@ -96,7 +114,11 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
 
                     # Try eval'ing function output
                     try:
-                        student_correct = eval(test_out)
+                        # check if doing schema abstraction
+                        if schema:
+                            student_correct = eval(schema.format(test_out))
+                        else:
+                            student_correct = eval(test_out)
                         tp_std_correct = type(student_correct)
                         assert tp_std_correct == bool
                     except AssertionError:
