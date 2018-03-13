@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# Used to copy all student assignment files from the dropbox into
+# a specified directory. If the dir doesn't exist, it will be made.
+# MUST be run from the cs051p/dropbox
+#
+# Example:
+#       ./copy_asgts 6 assignments
+#
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help)
+            echo "Usage: ./copy_asgts <asgt_num> <path_to_target_dir>"
+            echo "       ./copy_asgts 6 asgt06/assignments"
+            echo "The script must be in the dropbox folder to work"
+            exit
+            ;;
+        *)
+            if [ -z "$1" -o -z "$2" ]; then
+                echo "Usage: ./copy_asgts <asgt_num> <path_to_target_dir>"
+                echo "       ./copy_asgts 6 asgt06/assignments"
+                echo "The script must be in the dropbox folder to work"
+                exit
+            else
+                ASGT="$1"
+                TRGT="$2"
+                shift
+                shift
+            fi
+            ;;
+    esac
+done
+if [ "$ASGT" -a "$TRGT" ]; then
+    # if target dir doesn't exist, make one
+    if [ ! -d "$TRGT" ]; then
+        mkdir "$TRGT"
+    fi
+    # for each of the assignments in current dir (dropbox)
+    for asgt in */*ss*$ASGT.py; do
+        # make the new name (form of <username>_assignment<asgt_num>.py)
+        NEW_FNAME=$(echo $asgt | tr "/" "_")
+        # copy it from its location to the target location
+        cp "$asgt" "$TRGT/$NEW_FNAME"
+    done
+else
+	echo "Usage: ./copy_asgts <asgt_num> <path_to_target_dir>"
+    echo "       ./copy_asgts 6 asgt06/assignments"
+    echo "The script must be in the dropbox folder to work"
+    exit
+fi
