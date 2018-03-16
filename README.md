@@ -2,8 +2,8 @@
 ## How-to use:
 1. Clone this repo.
 2. Copy all the assignments into a directory within your working directory (e.g. you can use the `scripts/copy_asgts` script for this; note that it has to be copied into the dropbox, and run from there).
-3. Configure the `config.ini` file as you wish (see 'How to configure' section)
-4. Write tests in a json format, following testing specification (see 'How to write tests' section)
+3. Configure the `config.ini` file as you wish (see 'How-to setup the config file' section).
+4. Write tests to a json file, following testing specification (see 'How-to write tests' section).
 5. Run the autograder (definitely using Python 3, and probably using 3.6 to make sure you can run the assignments) with `python3 autograder.py`.
 
 ## How-to setup the config file
