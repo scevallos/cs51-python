@@ -49,12 +49,13 @@ def get_modules_to_test(whoToTest: str, modules: List[ModuleType]) -> List[Modul
     Returns:
         {modules} & {whoToTest}
     """
-    if whoToTest != '*':
-        # list of modules where the username is one of the whoToTest
-        return [module for name in whoToTest.split() for module in modules if get_username_from_module(module) == name]
-    else:
+    if whoToTest == '*':
         # test everyone
         return modules
+    else:
+        # list of modules where the username is one of the whoToTest
+        return [module for name in whoToTest.split() for module in modules if get_username_from_module(module) == name]
+        
 
 
 
@@ -184,9 +185,10 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                         score_file.write("\t#{}: PASSED\n".format(func_num_test_case))
                     else:
                         if schema:
-                            score_file.write("\t#{}: FAILED; {} should've evaluated to True but was False\n".format(func_num_test_case, schema.format(test_out)))
+                            right_ans = eval(schema.split('==')[-1].format(test_out))
+                            score_file.write("\t#{}: FAILED; got {!r}, but needed {!r}\n".format(func_num_test_case, student_ans, right_ans))
                         else:
-                            score_file.write("\t#{}: FAILED; got {}, but needed {}\n".format(func_num_test_case, ans, test_out))
+                            score_file.write("\t#{}: FAILED; got {}, but needed {}\n".format(func_num_test_case, student_ans, test_out))
                 score_file.write("\tscore: {}/{}\n".format(func_num_correct, func_num_test_case))
 
                 # keep count for total score calculation
@@ -305,7 +307,7 @@ def cli_args() -> argparse.Namespace:
     """
     argprsr = argparse.ArgumentParser()
     argprsr.add_argument('-v', '--verbose', help='increase verbosity of output', action="store_true")
-    argprsr.add_argument('-c', '--config', help='specify the path to the config file (default is "config.ini")', action='store', default='config.ini')
+    argprsr.add_argument('-c', '--config', help="specify the path to the config file (default is 'config.ini')", action='store', default='config.ini')
     return argprsr.parse_args()
 
 
@@ -319,11 +321,13 @@ def main():
     # setup the asgts, tests, and config object
     assignment_modules, tests, default = setup(args)
 
-    # running tests.json tests on specified functions
-    test_functions(assignment_modules, tests, default, args.verbose)
+    # running tests on specified modules & functions
+    if assignment_modules and tests:
+        test_functions(assignment_modules, tests, default, args.verbose)
 
     # running main tests
-    test_mains(assignment_modules, default)
+    if default.getboolean('TestMain'):
+        test_mains(assignment_modules, default)
 
 
 

@@ -1,3 +1,0 @@
-./tests/football_player.ppm
-./grades/skhan1_assignment06_out1.ppm
-1

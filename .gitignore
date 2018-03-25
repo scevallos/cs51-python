@@ -1,3 +1,4 @@
 assignments/
 grades/
+__pycache__/
 *.swp
