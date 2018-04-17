@@ -6,9 +6,9 @@ from types import ModuleType
 from typing import List, Tuple, Dict, Any, Text
 from configparser import SectionProxy
 from argparse import Namespace
-from queue import Queue
+from multiprocessing import Queue
 
-from lib.testcase import Testcase, make_test_objs
+from lib.testcase import Testcase
 from lib.student import Student, make_student_objs
 from utils import setup
 
@@ -45,20 +45,15 @@ def main():
     # get assignments, load in tests, and get config default object
     assignment_modules, tests, default = run_setup(args)
 
-    # used to handle the threads(testcase objs) safely
-    tests = Queue()
-    
-    process_test = make_test_objs(tests, args.verbose)[0]
-
-    print(process_test)
+    # used for safely handling multiple processes
+    queue = Queue()
 
     students = make_student_objs(assignment_modules)
 
-    print(students)
-
     for student in students:
-    	for testcase in [process_test]:
-    		student.test(testcase)
+        student.run(tests, queue, args.verbose)
+
+    print('end of main')
 
 if __name__ == '__main__':
     main()

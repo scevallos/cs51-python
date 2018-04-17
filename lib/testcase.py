@@ -2,10 +2,10 @@
 blah blah
 """
 from typing import Any, Dict, Text, List, Callable
-import threading
+from multiprocessing import Process, Queue
 import time
 
-class Testcase(threading.Thread):
+class Testcase(Process):
     """
     A testcase object for a certain assignment function to be tested.
     Consists of:
@@ -16,11 +16,11 @@ class Testcase(threading.Thread):
         * (optional) whether or not to have verbose output
         * (optional) name of asgt function being tested
     """
-    def __init__(self, tests: Dict[str, str], # TODO: probably change/fix callback type annot.
-                schema: str = None, setup: str = None, callback: Callable[[Any], Any] = None,
-                verbose: bool = False, name: str = 'NoName') -> None:
+    def __init__(self, tests: Dict[str, str], queue: Queue, # TODO: probably change/fix callback type annot.
+                schema: Text = None, setup: Text = None, callback: Callable[[Any], Any] = None,
+                verbose: bool = False, name: Text = 'NoName') -> None:
         # constructor from super class
-        threading.Thread.__init__(self)
+        super(Process, self).__init__()
 
         # 3 things that make up a test case obj
         self.tests = tests
@@ -39,22 +39,46 @@ class Testcase(threading.Thread):
         # vars in scope of this testcase
         self.vars : Dict[Text, Any] = {}
 
+    def __try_exec_line(self, line: Text) -> None:
+        """
+        Safely attempts to execute line literally, storing side-vars in self.vars
+        """
+        try:
+            exec(line, self.vars)
+        except Exception as err:
+            print(f'Issue during execution of setup: {err}')
+            print(f'Line was: {line}')
+            return # TODO: does this stop the process??
+
+    def __process_setup(self):
+        """
+        Executes the the setup code intended to be run prior to running the
+        test. Stores vars that might have been assigned here in self.vars
+        """
+        setup_type = type(self.setup)
+
+        # setup should be str (single line to exec) or [str] - multiple lines to exec
+        if setup_type == str:
+            self.__try_exec_line(self.setup)
+        elif setup_type == list:
+            for line in self.setup:
+                self.__try_exec_line(line)
+        else:
+            print(f'Expected setup to be str or list but was {setup_type}')
+            return # TODO: does this stop the process??
+
     def run(self):
         """
-        Override the threading.Thread run method to invoke running on a new thread
+        Override the run method to invoke running on a new process
         """
         if self.verbose:
             print(f'Running tests for {self.name}...')
             start = time.time()
 
-        # try running setup
+        # try running setup if there is one
         if self.setup:
-            try:
-                exec(self.setup, self.vars)
-            except Exception as err:
-                print(f'Issue during execution of setup: {err}')
-                print(f'Setup was: {self.setup}')
-                return
+            self.__process_setup()
+            
 
         for test_in, test_out in self.tests.items():
             # increment total num of tests
@@ -87,6 +111,7 @@ class Testcase(threading.Thread):
                 # exception raised during student code execution
                 # TODO: figure out what to do about score file - pass as another param, student object?
                 pass
+
     def __str__(self):
         maybe_param_name = lambda arg: arg + ',' if getattr(self, arg) else ''
         str_to_print = ''.join(map(maybe_param_name, ('schema', 'setup', 'tests', 'verbose', 'callback')))
@@ -96,7 +121,7 @@ class Testcase(threading.Thread):
         return f'Testcase<{self.name}>'
 
 
-def make_test_objs(tests: Dict[Text, Dict[Text, Any]], verbose: bool) -> List[Testcase]:
+def make_test_objs(tests: Dict[Text, Dict[Text, Any]], queue: Queue, verbose: bool) -> List[Testcase]:
     """
     Makes Testcase objects from the tests dictionary made from loading the
     tests json.
@@ -106,6 +131,7 @@ def make_test_objs(tests: Dict[Text, Dict[Text, Any]], verbose: bool) -> List[Te
         try:
             test_params['name'] = func_name
             test_params['verbose'] = verbose
+            test_params['queue'] = queue
             testcases.append(Testcase(**test_params))
         except Exception as err:
             print(f'Issue during making of Testcase object for {func_name}: {err}')

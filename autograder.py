@@ -7,8 +7,6 @@ TODO: fix a lot of things
 Author(s):
     scevallos (Sebastian)
 """
-# import threading
-# from queue import Queue
 import time
 
 import subprocess as sub

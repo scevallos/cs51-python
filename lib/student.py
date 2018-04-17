@@ -1,8 +1,10 @@
 """
 student class
 """
-from typing import List, Text
+from typing import List, Text, Dict, Any
 from types import ModuleType
+from multiprocessing import Queue
+
 from lib.testcase import Testcase
 
 class Student:
@@ -23,13 +25,17 @@ class Student:
         modname = module.__name__
         return modname[modname.find('.')+1:modname.find('_')]
 
-    def test(self, testcase: Testcase):
+    def run(self, tests: Dict[Text, Any], queue: Queue, verbose: bool):
         """
-        Tests this student's submission on the given testcase. This will
-        invoke the Testcase object's run method to run the test case on
-        a new thread.
         """
-        testcase.start()
+        for func_name, test_params in tests.items():
+            # a little more setup before making new process
+            test_params['name'] = func_name
+            test_params['verbose'] = verbose
+            test_params['queue'] = queue
+
+            # make new testcase obj that runs in new process
+            testcase = Testcase(**test_params)
 
     def __str__(self):
         return self.username
