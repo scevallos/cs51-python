@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.6
 """
 CS51P Autograder
 
@@ -6,6 +7,10 @@ TODO: fix a lot of things
 Author(s):
     scevallos (Sebastian)
 """
+# import threading
+# from queue import Queue
+import time
+
 import subprocess as sub
 import configparser
 import argparse
@@ -17,9 +22,11 @@ from json import load
 from types import ModuleType
 from typing import List, Dict, Tuple
 
-# Ensure python 3 is being used
-if version_info[0] < 3:
-    print("Please run this using a version of Python 3.")
+from utils import setup
+
+# Ensure python 3.6+ is being used
+if version_info[:2] < (3,6):
+    print("Please run this using a version of Python 3.6+")
     exit()
 
 def get_username_from_module(module: ModuleType) -> str:
@@ -89,13 +96,13 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
     modules_to_test = get_modules_to_test(default['WhoToTest'], modules)
 
     for module in modules_to_test:
-        # get the name of the module to make individual score file
-        modname = module.__name__
+        # get the name of the student from the module to make individual score file
+        student_username = get_username_from_module(module)
 
         if verbose:
-            print('testing {}'.format(modname))
+            print('testing {}'.format(student_username))
 
-        score_fname = join(default['GradesFolder'], modname.split('.')[-1]+'.out')
+        score_fname = join(default['GradesFolder'], student_username + '.out')
         with open(score_fname, 'w') as score_file:
             score_file.write("*TESTING FUNCTIONS*\n")
             
@@ -104,9 +111,6 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
             
             # keeping track of total number of test cases for this asgt
             total_correct = total_tests = 0
-
-            # TODO: maybe make test cases an ordered dict to preserve order
-            # across runs?
 
             # filter tests by ones specified in config
             funcs_to_test = default['FuncsToTest']
@@ -118,10 +122,22 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                     continue
                 # used for abstraction of optional schema for output testing
                 if type(test_case_obj) == list:
-                    schema, test_in_out = test_case_obj
+                    if len(test_case_obj) == 2:
+                        schema, test_in_out = test_case_obj
+                    elif len(test_case_obj) == 3:
+                        schema, setup, test_in_out = test_case_obj
+                    else:
+                        # do not know what to do with test_case_obj that's not len 2 or 3
+                        print("""The test case for a function must be in one of the below forms:
+                            {<literal_input> : <literal_output>}
+                            [<schema>, {<literal_input> : <format_values>}
+                            [<schema>, setup, {<literal_input> : <format_values>}]
+                            """)
+                        continue
                 else:
                     test_in_out = test_case_obj
                     schema = None
+                    setup = None
                 # used for numbering of testcases and keeping track of correct
                 func_num_correct = func_num_test_case = 0
 
@@ -132,7 +148,7 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                 try:
                     func = getattr(module, func_name)
                 except AttributeError:
-                    print('Unable to get function {} from {}'.format(func_name, modname))
+                    print('Unable to get function {} from {}'.format(func_name, student_username))
                     score_file.write('\tno such function in this module\n')
                     continue
 
@@ -141,6 +157,14 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                     # Increment number of test case
                     func_num_test_case += 1
 
+                    # If using setup, run that first
+                    try:
+                        if setup:
+                            exec(setup) # TODO: probably use dicts for globals, locals instead of clogging
+                                        #       global namespace here
+                    except Exception as err:
+                        print(f'Issue during execution of testcase setup: {err}')
+                        continue
                     # Try eval'ing function input
                     try:
                         inp = eval(test_in)
@@ -150,7 +174,7 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                         continue
                     # Try running student code
                     try:
-                        if type(inp) == list:
+                        if type(inp) == list or type(inp) == tuple:
                             # unpack test_in if func has multiple input args
                             student_ans = func(*inp)
                         else:
@@ -164,9 +188,23 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
 
                     # Try eval'ing function output
                     try:
+                        # print('ABOUT TO CHECK THING')
+                        # print(f'test_out is {test_out}')
+                        # print('evaling')
+                        # xxx = eval(test_out)
+                        # print(f'output was {xxx}')
+                        # print('*DONE*')
                         # check if doing schema abstraction
                         if schema:
-                            student_correct = eval(schema.format(test_out))
+                            format_vals = eval(test_out)
+                            if type(format_vals) == tuple:
+                                # print('tuple case')
+                                # print(f'about to eval: {schema.format(*format_vals)}')
+                                student_correct = eval(schema.format(*format_vals))
+                                # print('evaled w/ schema')
+                            else:
+                                # assuming if not tuple, then single val, e.g. int or something
+                                student_correct = eval(schema.format(format_vals))
                         else:
                             student_correct = eval(test_out) == ans
                         tp_std_correct = type(student_correct)
@@ -176,7 +214,7 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                         score_file.write("\t#{}: TESTCASE ERROR - output eval was not bool\n".format(func_num_test_case))
                         continue
                     except Exception as err:
-                        print('Testcase #{} for {}: error during literal eval of output ({}): {}'.format(func_num_test_case, func_name, test_out, err))
+                        print('Testcase #{} for {}: error during literal eval of output {!r}: {}'.format(func_num_test_case, func_name, test_out, err))
                         score_file.write("\t#{}: TESTCASE ERROR - output eval issue\n".format(func_num_test_case))
                         continue
 
@@ -184,9 +222,15 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
                         func_num_correct += 1
                         score_file.write("\t#{}: PASSED\n".format(func_num_test_case))
                     else:
+                        # TODO: Make the failed message a little better for schema usage
                         if schema:
-                            right_ans = eval(schema.split('==')[-1].format(test_out))
-                            score_file.write("\t#{}: FAILED; got {!r}, but needed {!r}\n".format(func_num_test_case, student_ans, right_ans))
+                            try:
+                                expected = schema.format(*format_vals)
+                                gotten_exprs = [eval(left, {'ans': ans}) for left, right in [binop.split('==') for binop in schema.split('and')]]
+                                got_str = schema.format(*gotten_exprs).replace('==', 'was')
+                                score_file.write(f"\t#{func_num_test_case}: FAILED; expected:\n\t{expected}\ngot:\n\t{got_str}\n")
+                            except Exception as err:
+                                score_file.write(f"\t#{func_num_test_case}: FAILED; and bad error!\n")
                         else:
                             score_file.write("\t#{}: FAILED; got {}, but needed {}\n".format(func_num_test_case, student_ans, test_out))
                 score_file.write("\tscore: {}/{}\n".format(func_num_correct, func_num_test_case))
@@ -202,7 +246,7 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
         all_scores.close()
 
 
-def test_mains(modules, default):
+def test_mains(modules: List[ModuleType], default: configparser.ConfigParser):
     """
     Used to test the execution of the main function in the specified
     submissions. Does this by starting subprocess and using stdin/out
@@ -242,7 +286,7 @@ def test_mains(modules, default):
             out_test_file.close()
             in_test_file.close()
 
-def setup(args: argparse.Namespace) -> Tuple[List[ModuleType], Dict[str, str], configparser.ConfigParser]:
+def setup_grader(args: argparse.Namespace) -> Tuple[List[ModuleType], Dict[str, str], configparser.ConfigParser]:
     """
     Runs setup for the autograder to work which includes:
     * reading in the 'config.ini'
@@ -258,57 +302,24 @@ def setup(args: argparse.Namespace) -> Tuple[List[ModuleType], Dict[str, str], c
         print('parsing config file...')
 
     # setup config parser
-    config = configparser.ConfigParser()
-    config.read(args.config)
-    default = config['DEFAULT']
+    default = setup.parse_config()
 
     if args.verbose:
         print('importing the assignments...')
 
     # import the assignments as modules
-    try:
-        assignment_modules = [importlib.import_module(join(default['AssignmentsFolder'], m[:-3]).replace('/', '.')) for m in listdir(default['AssignmentsFolder']) if ('sig' in m and default['AssignmentNumber'] in m)]
-    except Exception as err:
-        print('Issues with importing assignments as modules: {}'.format(err))
-        print('The assignments must be of the form "<username>_assignment<assignment_num>.py" inside the AssignmentsFolder specified in the config file.')
-        print('The <assignment_num> must match the AssignmentNumber in the config file.')
-        exit()
+    assignment_modules = setup.import_assignments(default['AssignmentsFolder'], default['AssignmentNumber'], default['WhoToTest'])
 
     # set up results dir if doesn't exist
-    if not(exists(default['GradesFolder']) and isdir(default['GradesFolder'])):
-        if args.verbose:
-            print('making grades folder at {}...'.format(default['GradesFolder']))
-        mkdir(default['GradesFolder'])
+    setup.maybe_mkdir(default['GradesFolder'])
 
     if args.verbose:
         print('loading in tests...')
     # set up tests from tests json file
-    if exists(default['TestsFolder']) and isdir(default['TestsFolder']):
-        try:
-            with open(join(default['TestsFolder'], 'tests.json')) as tests_file:
-                tests = load(tests_file)
-        except FileNotFoundError:
-            print('Could not find tests.json file in TestsFolder ({})'.format(default['TestsFolder']))
-            exit()
-    else:
-        print('No TestsFolder with name {} exists.'.format(default['TestsFolder']))
-        exit()
+    tests = setup.load_tests(default['TestsFolder'])
 
     return assignment_modules, tests, default
 
-
-def cli_args() -> argparse.Namespace:
-    """
-    Parses optional arguments for either verbose output or
-    config file in a different directory than this file.
-
-    Returns:
-        parsed arguments object
-    """
-    argprsr = argparse.ArgumentParser()
-    argprsr.add_argument('-v', '--verbose', help='increase verbosity of output', action="store_true")
-    argprsr.add_argument('-c', '--config', help="specify the path to the config file (default is 'config.ini')", action='store', default='config.ini')
-    return argprsr.parse_args()
 
 
 def main():
@@ -316,14 +327,19 @@ def main():
     write doc string soon
     """
     # parse cli arguments specified when running autograder
-    args = cli_args()
+    args = setup.cli_args()
     
     # setup the asgts, tests, and config object
-    assignment_modules, tests, default = setup(args)
+    assignment_modules, tests, default = setup_grader(args)
+
+    # time testing the functions
+    start = time.time()
 
     # running tests on specified modules & functions
     if assignment_modules and tests:
         test_functions(assignment_modules, tests, default, args.verbose)
+
+    print("Execution time = {0:.5f}".format(time.time() - start))
 
     # running main tests
     if default.getboolean('TestMain'):

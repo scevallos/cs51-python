@@ -2,3 +2,4 @@ assignments/
 grades/
 __pycache__/
 *.swp
+.mypy_cache/
