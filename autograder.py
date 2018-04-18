@@ -186,12 +186,6 @@ def test_functions(modules: List[ModuleType], tests: Dict[str, str], default: co
 
                     # Try eval'ing function output
                     try:
-                        # print('ABOUT TO CHECK THING')
-                        # print(f'test_out is {test_out}')
-                        # print('evaling')
-                        # xxx = eval(test_out)
-                        # print(f'output was {xxx}')
-                        # print('*DONE*')
                         # check if doing schema abstraction
                         if schema:
                             format_vals = eval(test_out)

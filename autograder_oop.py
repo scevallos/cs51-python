@@ -7,6 +7,7 @@ from typing import List, Tuple, Dict, Any, Text
 from configparser import SectionProxy
 from argparse import Namespace
 from multiprocessing import Queue
+from time import time
 
 from lib.testcase import Testcase
 from lib.student import Student, make_student_objs
@@ -42,6 +43,10 @@ def main():
     # parse cli arguments specified when running autograder
     args = setup.cli_args()
 
+    # start timer if verbose output desired
+    if args.verbose:
+        start = time()
+
     # get assignments, load in tests, and get config default object
     assignment_modules, tests, default = run_setup(args)
 
@@ -50,10 +55,19 @@ def main():
 
     students = make_student_objs(assignment_modules)
 
+    all_testcases: Dict[Text, List[Testcase]] = {}
     for student in students:
-        student.run(tests, queue, args.verbose)
+        all_testcases[student.username] = student.run(tests, queue, args.verbose)
 
-    print('end of main')
+    all_results: Dict[Text, Tuple[Text, List[Text]]] = {}
+    for student, testcases in all_testcases.items():
+        for testcase in testcases:
+            testcase.join()
+            all_results[student] = queue.get()
+
+    if args.verbose:
+        print("Execution time: {0:.5f} secs".format(time() - start))
+
 
 if __name__ == '__main__':
     main()

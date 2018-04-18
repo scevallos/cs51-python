@@ -10,6 +10,7 @@ from lib.testcase import Testcase
 class Student:
 
     def __init__(self, module: ModuleType) -> None:
+        self.module = module
         self.username: Text = self._get_username_from_module(module)
 
 
@@ -28,14 +29,23 @@ class Student:
     def run(self, tests: Dict[Text, Any], queue: Queue, verbose: bool):
         """
         """
+        test_cases = []
         for func_name, test_params in tests.items():
             # a little more setup before making new process
             test_params['name'] = func_name
             test_params['verbose'] = verbose
             test_params['queue'] = queue
+            test_params['student_function'] = getattr(self.module, func_name)
 
             # make new testcase obj that runs in new process
             testcase = Testcase(**test_params)
+            if verbose:
+                print(f'Starting tests on {self.username}')
+            testcase.start()
+
+            test_cases.append(testcase)
+
+        return test_cases
 
     def __str__(self):
         return self.username
