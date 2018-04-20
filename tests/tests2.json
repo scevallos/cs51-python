@@ -1,7 +1,28 @@
 {
   "parse_rainfall" : {
+  	"setup" : [
+  		"from tests.csvs.ans import rain_test_ANS, rain_2012_2017_ANS"
+  	],
     "tests" : {
-      "tests/csvs/rainTest2.csv" : "{'2012-01-01': 0.0, '2012-01-02': 0.43, '2012-01-03': 0.03, '2012-01-04': 0.8, '2012-01-05': 0.05, '2012-01-06': 0.1, '2012-01-07': 0.0, '2012-01-08': 0.0, '2012-01-09': 0.17}"
+      "'tests/csvs/rainTest1.csv'" : "rain_test_ANS",
+      "'tests/csvs/rainTest2.csv'" : "rain_test_ANS"
     }
+  },
+  "parse_stock" : {
+  	"setup" : [
+  		"from tests.csvs.ans import stock_test_ANS"
+  	],
+  	"tests" : {
+  		"('tests/csvs/stockTest1.csv', 'GOOGL')" : "stock_test_ANS",
+  		"('tests/csvs/stockTest2.csv', 'GOOGL')" : "stock_test_ANS"
+  	}
+  },
+  "correlate_data" : {
+  	"setup" : [
+  		"from tests.csvs.ans import stock_test_ANS, rain_test_ANS, correlate_test_data_ANS"
+  	],
+  	"tests" : {
+  		"(stock_test_ANS, rain_test_ANS)" : "correlate_test_data_ANS"
+  	}
   }
 }

@@ -36,12 +36,14 @@ class Student:
             test_params['verbose'] = verbose
             test_params['queue'] = queue
             test_params['student_function'] = getattr(self.module, func_name)
+            test_params['student_username'] = self.username
 
             # make new testcase obj that runs in new process
             testcase = Testcase(**test_params)
             if verbose:
                 print(f'Starting tests on {self.username}')
             testcase.start()
+            # testcase.join()
 
             test_cases.append(testcase)
 

@@ -308,7 +308,7 @@ def setup_grader(args: argparse.Namespace) -> Tuple[List[ModuleType], Dict[str, 
     if args.verbose:
         print('loading in tests...')
     # set up tests from tests json file
-    tests = setup.load_tests(default['TestsFolder'])
+    tests = setup.load_tests(default['TestsFolder'], 'tests2.json')
 
     return assignment_modules, tests, default
 

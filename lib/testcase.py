@@ -16,7 +16,7 @@ class Testcase(Process):
         * (optional) name of asgt function being tested
     """
     def __init__(self, tests: Dict[str, str], queue: Queue,
-        student_function: Callable[[Any], Any], # TODO: probably change/fix callback type
+        student_function: Callable[[Any], Any], student_username: Text = '', # TODO: probably change/fix callback type
         schema: Text = None, setup: Text = None, callback: Callable[[Any], Any] = None,
         verbose: bool = False, name: Text = 'NoName') -> None:
         # constructor from super class
@@ -29,6 +29,7 @@ class Testcase(Process):
         self.callback = callback
         self.queue = queue
         self.student_function = student_function
+        self.student_username = student_username
         
         # verbosity and name of the test case (used for verbosity)
         self.verbose = verbose
@@ -114,7 +115,7 @@ class Testcase(Process):
 
         final_report = [None] * len(self.tests)
 
-        for test_in, test_out in self.tests.items():
+        for test_in, test_out in sorted(self.tests.items()):
             # increment total num of tests
             self.total += 1
 
@@ -139,7 +140,7 @@ class Testcase(Process):
                     student_out = self.student_function(*inp)
                 except Exception as err:
                     print(f'Issue while running student code: {err}')
-                    final_report[self.total - 1] = 'student code error'
+                    final_report[self.total - 1] = f'student code error: {err}; input: {inp}; func_name: {self.name}'
                     if self.verbose:
                         print(f'Function being run was: {self.name}')
                         print(f'Inputs were: {inp}')
@@ -149,7 +150,7 @@ class Testcase(Process):
                     student_out = self.student_function(inp)
                 except Exception as err:
                     print(f'Issue while running student code: {err}')
-                    final_report[self.total - 1] = 'student code error'
+                    final_report[self.total - 1] = f'student code error: {err}; input: {inp}; func_name: {self.name}'
                     if self.verbose:
                         print(f'Function being run was: {self.name}')
                         print(f'Input was: {inp}')
@@ -169,15 +170,16 @@ class Testcase(Process):
                     failed_str = " and ".join([", ".join(maybe_failed_schema[:-1]),maybe_failed_schema[-1]] if len(maybe_failed_schema) > 2 else maybe_failed_schema)
                     final_report[self.total - 1] = f'FAILED; failed following assertion(s): {failed_str}'
             else:
-                if student_out == test_out:
+                expected_ans = eval(test_out, self.vars)
+                if student_out == expected_ans:
                     self.correct += 1
                     final_report[self.total - 1] = 'PASSED'
                 else:
                     # failed the only test
-                    final_report[self.total - 1] = f'FAILED; got {student_out} but expected {test_out}'
+                    final_report[self.total - 1] = f'FAILED; got {student_out} but expected {expected_ans}'
 
         # once done, put the final report on the queue
-        self.queue.put((f'{self.correct}/{self.total}', final_report))
+        self.queue.put((self.student_username, self.name, f'{self.correct}/{self.total}', final_report))
 
 
     def __str__(self):
