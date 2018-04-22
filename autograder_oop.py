@@ -35,7 +35,7 @@ def run_setup(args: Namespace) -> Tuple[List[ModuleType], Dict[Text, Any], Secti
         print('loading in tests...')
 
     # set up tests from tests json file
-    tests = setup.load_tests(default['TestsFolder'], 'tests2.json')
+    tests = setup.load_tests(default['TestsFolder'], default['TestsFile'])
 
     return assignment_modules, tests, default
 

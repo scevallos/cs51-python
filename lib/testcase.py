@@ -94,7 +94,15 @@ class Testcase(Process):
             else:
                 i = 0
                 while i < schema_len:
-                    single_result = eval(self.schema[i].format(format_vals[i]), self.vars)
+                    try:
+                        form_val = format_vals[i]
+                        schm_val = self.schema[i]
+                        expr = schm_val.format(form_val)
+                        single_result = eval(expr, self.vars)
+                    except IndexError as err:
+                        print(f'i is: {i}; expr is: {expr}')
+                        raise err
+                        exit()
                     check_results.append(single_result)
                     if not single_result:
                         maybe_failed_schema.append(self.schema[i])
