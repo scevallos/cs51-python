@@ -184,7 +184,13 @@ class Testcase(Process):
                     final_report[self.total - 1] = 'PASSED'
                 else:
                     # failed the only test
-                    final_report[self.total - 1] = f'FAILED; got {student_out} but expected {expected_ans}'
+                    final_report[self.total - 1] = f'FAILED; got {repr(student_out)} but expected {repr(expected_ans)}'
+
+        # run callback function, if there is one
+        if self.callback:
+            if self.verbose:
+                print('Running callback...')
+            print('call back is:', self.callback)
 
         # once done, put the final report on the queue
         self.queue.put((self.student_username, self.name, f'{self.correct}/{self.total}', final_report))
