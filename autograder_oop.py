@@ -35,7 +35,7 @@ def run_setup(args: Namespace) -> Tuple[List[ModuleType], Dict[Text, Any], Secti
         print('loading in tests...')
 
     # set up tests from tests json file
-    tests = setup.load_tests(default['TestsFolder'], default['TestsFile'])
+    tests = setup.load_tests(default['TestsFolder'], default['TestsFile'], default['FuncsToTest'])
 
     return assignment_modules, tests, default
 
@@ -48,16 +48,19 @@ def write_results_files(all_results: Dict[Text, Dict[Text, Tuple[Text, List[Text
     # write individual result files
     for name, func_results in sorted(all_results.items()):
         total_score = 0
+        total_total = 0
         student_result = open(join(grades_dir, name + '.out'), 'w')
         for func_name, (score, details) in func_results.items():
             if all_results_file:
-                total_score += int(score.split('/')[0])
+                correct_str, total_str = score.split('/')
+                total_score += int(correct_str)
+                total_total += int(total_str)
             student_result.write(f'{func_name}: {score}\n')
             for i in range(len(details)):
                 student_result.write(f'\t#{i+1} - {details[i]}\n')
         student_result.close()
         if all_results_file:
-            results_file.write(f'{name}:\t{total_score}\n')
+            results_file.write(f'{name}:\t{total_score}/{total_total}\n')
 
     if all_results_file:
         results_file.close()
@@ -91,7 +94,9 @@ def main():
             if queue_output[0] not in all_results:
                 all_results[queue_output[0]] = {}
             all_results[queue_output[0]][queue_output[1]] = queue_output[2:]
-
+    
+    if args.verbose:
+        print("Writing results to score files...")
     write_results_files(all_results, default['GradesFolder'], default.getboolean('ResultsFile'))
 
     if args.verbose:
