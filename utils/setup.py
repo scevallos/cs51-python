@@ -91,7 +91,7 @@ def maybe_mkdir(dir_name: str) -> None:
     if not(exists(dir_name) and isdir(dir_name)):
         mkdir(dir_name)
 
-def load_tests(tests_dir: str, test_fname: str = 'tests.json') -> Dict[str, Any]:
+def load_tests(tests_dir: str, test_fname: str = 'tests.json', funcs: str = '*') -> Dict[str, Any]:
     """
     Tries to load in tests file from given tests_dir.
 
@@ -116,6 +116,13 @@ def load_tests(tests_dir: str, test_fname: str = 'tests.json') -> Dict[str, Any]
         print(f"Given directory ({tests_dir}) either doesn't exist, or is not a directory")
         exit()
 
-    return tests
-
+    # filter tests based on FuncsToTest config var
+    if funcs != '*':
+        tests_to_run = {}
+        for func_name, test_params in tests.items():
+            if func_name in funcs:
+                tests_to_run[func_name] = test_params
+        return tests_to_run
+    else:
+        return tests
 
