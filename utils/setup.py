@@ -61,8 +61,17 @@ def import_assignments(asgts_dir: str, asgt_num: str, who: str) -> List[ModuleTy
         username = asgt.split('_')[0]
 
         # if we want specific people, this username is not who we want, skip it
-        if who != '*' and username not in who:
-            continue
+        if who != '*':
+            if who[0] == '-':
+                # doing negative filtering => do everyone minus the people w/ a minus sign
+                if username in who:
+                    continue
+            else:
+                # positive filtering => only grab people whose names are on here
+                if username not in who:
+                    continue
+
+
 
         # try to import the assignment
         try:
